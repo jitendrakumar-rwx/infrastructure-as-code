@@ -177,6 +177,7 @@ resource "null_resource" "rhel_unregister" {
     user        = self.triggers.username
     private_key = self.triggers.private_key
     host        = self.triggers.vm_ip
+    timeout     = "30s"
   }
 
   provisioner "remote-exec" {
