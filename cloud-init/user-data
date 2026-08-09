@@ -4,6 +4,11 @@ hostname: ${vm_hostname}
 preserve_hostname: false
 package_update: true
 
+# Prevent Ubuntu background auto-updates from locking apt during provisioning
+bootcmd:
+  - [ systemctl, mask, unattended-upgrades.service, apt-daily-upgrade.timer, apt-daily.timer ]
+  - [ systemctl, stop, unattended-upgrades.service, apt-daily-upgrade.timer, apt-daily.timer ]
+
 users:
   - default
   - name: ${vm_username}

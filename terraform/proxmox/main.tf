@@ -141,6 +141,7 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   ############################################################
   agent {
     enabled = true
+    timeout = "5m"
   }
 
   ############################################################
