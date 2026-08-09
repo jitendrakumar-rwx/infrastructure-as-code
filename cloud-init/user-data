@@ -41,8 +41,9 @@ runcmd:
     if [ -f /etc/debian_version ]; then
       apt-get install -y iputils-ping netcat-openbsd
     elif [ -f /etc/redhat-release ]; then
-      dnf install -y iputils nmap-ncat bash-completion
+      dnf install -y iputils nmap-ncat bash-completion insights-client
       echo '[ -f /etc/profile.d/bash_completion.sh ] && . /etc/profile.d/bash_completion.sh' >> /etc/bashrc
+      insights-client --register
     fi
 %{ if vm_swap_size > 0 ~}
   - |
