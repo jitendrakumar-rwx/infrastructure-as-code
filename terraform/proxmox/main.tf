@@ -4,6 +4,10 @@ terraform {
       source  = "bpg/proxmox"
       version = "0.66.3"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -151,3 +155,37 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
     type = "serial0"
   }
 }
+
+############################################################
+# Auto-unregister RHEL subscription before VM is destroyed.
+# Strictly runs ONLY if rhel_activation_key is provided.
+# Skipped entirely for Ubuntu/CentOS (count = 0).
+############################################################
+resource "null_resource" "rhel_unregister" {
+  # Only create this resource if RHEL subscription is configured
+  count = var.rhel_activation_key != "" ? var.vm_count : 0
+
+  triggers = {
+    vm_id       = proxmox_virtual_environment_vm.ubuntu_vm[count.index].id
+    vm_ip       = try([for ip in flatten(proxmox_virtual_environment_vm.ubuntu_vm[count.index].ipv4_addresses) : ip if !startswith(ip, "127.")][0], "127.0.0.1")
+    username    = var.vm_username
+    private_key = file(pathexpand(var.proxmox_ssh_private_key_file))
+  }
+
+  connection {
+    type        = "ssh"
+    user        = self.triggers.username
+    private_key = self.triggers.private_key
+    host        = self.triggers.vm_ip
+    timeout     = "30s"
+  }
+
+  provisioner "remote-exec" {
+    when       = destroy
+    on_failure = continue
+    inline = [
+      "sudo subscription-manager unregister || true"
+    ]
+  }
+}
+
