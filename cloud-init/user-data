@@ -1,5 +1,7 @@
 #cloud-config
 
+hostname: ${vm_hostname}
+preserve_hostname: false
 package_update: true
 
 users:
@@ -35,7 +37,6 @@ timezone: ${timezone}
 
 runcmd:
   - systemctl enable --now qemu-guest-agent
-  - hostnamectl set-hostname "${vm_hostname}"
   - |
     if [ -f /etc/debian_version ]; then
       apt-get install -y iputils-ping netcat-openbsd
@@ -51,9 +52,3 @@ runcmd:
     swapon /swapfile
     echo '/swapfile none swap sw 0 0' >> /etc/fstab
 %{ endif ~}
-
-power_state:
-  mode: reboot
-  message: "Cloud-init complete. Rebooting to apply changes."
-  timeout: 10
-  condition: true
