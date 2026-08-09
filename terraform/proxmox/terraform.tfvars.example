@@ -19,6 +19,7 @@ vm_name_prefix = "ubuntu-vm"
 vm_memory      = 2048
 vm_vcpu        = 2
 vm_disk_size   = 30
+vm_swap_size   = 2048   # swap in MB (set to 0 to disable)
 
 datastore_id         = "local-lvm" # storage for VM disks
 snippet_datastore_id = "local"     # storage with 'snippets' content enabled
@@ -35,9 +36,11 @@ imported_image_name = "ubuntu-noble-base.img"
 # user-data variables
 #######################################
 
-ssh_public_key     = "xxxx-xxxxx-xxxxx-xxxx-xxxxx-xxxxx"
-tailscale_auth_key = "tskey-auth-xxxx-xxxxx-xxxxx"
+ssh_public_key = "xxxx-xxxxx-xxxxx-xxxx-xxxxx-xxxxx"
 
-vm_username     = "jitendra"
-hostname_prefix = "ip"
-timezone        = "Asia/Kolkata"
+vm_username = "jitendra"
+timezone    = "Asia/Kolkata"
+
+# RHEL subscription (optional — leave empty or omit for Ubuntu/CentOS/Rocky/Alma)
+# rhel_activation_key = "your-activation-key"
+# rhel_org_id         = "your-org-id"

@@ -11,6 +11,13 @@ users:
     ssh_authorized_keys:
       - ${ssh_public_key}
 
+%{ if rhel_activation_key != "" && rhel_org_id != "" ~}
+rh_subscription:
+  activation-key: ${rhel_activation_key}
+  org: ${rhel_org_id}
+  auto-attach: true
+%{ endif ~}
+
 packages:
   - qemu-guest-agent
   - curl
@@ -20,36 +27,30 @@ packages:
   - unzip
   - bash-completion
   - tcpdump
-  - iputils-ping 
-  - traceroute   
+  - traceroute
   - nmap
-  - netcat-openbsd
   - tmux
 
 timezone: ${timezone}
 
 runcmd:
   - systemctl enable --now qemu-guest-agent
+  - hostnamectl set-hostname "${vm_hostname}"
   - |
-    set -e
-    curl -fsSL https://tailscale.com/install.sh | sh
-    systemctl enable tailscaled
-    systemctl start tailscaled
-    until systemctl is-active --quiet tailscaled; do
-    	sleep 2
-    done
-    tailscale up --authkey=${tailscale_auth_key}
-
-    for i in $(seq 1 120); do
-      TS_IP=$(ip -4 addr show tailscale0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
-      if [ -n "$TS_IP" ]; then
-        DASHED_IP=$(echo "$TS_IP" | sed 's/\./-/g')
-        hostnamectl set-hostname "${hostname_prefix}-$DASHED_IP"
-        echo "$TS_IP" > /root/tailscale-ip.txt
-        break
-      fi
-      sleep 2
-    done
+    if [ -f /etc/debian_version ]; then
+      apt-get install -y iputils-ping netcat-openbsd
+    elif [ -f /etc/redhat-release ]; then
+      dnf install -y iputils nmap-ncat bash-completion
+      echo '[ -f /etc/profile.d/bash_completion.sh ] && . /etc/profile.d/bash_completion.sh' >> /etc/bashrc
+    fi
+%{ if vm_swap_size > 0 ~}
+  - |
+    fallocate -l ${vm_swap_size}M /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo '/swapfile none swap sw 0 0' >> /etc/fstab
+%{ endif ~}
 
 power_state:
   mode: reboot

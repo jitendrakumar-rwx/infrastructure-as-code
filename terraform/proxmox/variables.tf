@@ -74,6 +74,12 @@ variable "vm_disk_size" {
   default     = 30
 }
 
+variable "vm_swap_size" {
+  description = "Swap space per VM in MB (set to 0 to disable swap)"
+  type        = number
+  default     = 2048
+}
+
 variable "datastore_id" {
   description = "Proxmox storage for VM disks and cloud-init drive"
   type        = string
@@ -121,26 +127,27 @@ variable "ssh_public_key" {
   sensitive   = true
 }
 
-variable "tailscale_auth_key" {
-  description = "Tailscale auth key"
-  type        = string
-  sensitive   = true
-}
-
 variable "vm_username" {
   description = "Default VM user"
   type        = string
   default     = "ubuntu"
 }
 
-variable "hostname_prefix" {
-  description = "Prefix for hostname generated from Tailscale IP"
-  type        = string
-  default     = "ip"
-}
-
 variable "timezone" {
   description = "System timezone"
   type        = string
   default     = "Asia/Kolkata"
+}
+
+variable "rhel_activation_key" {
+  description = "RHEL activation key for subscription-manager (leave empty to skip registration)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "rhel_org_id" {
+  description = "RHEL organization ID for subscription-manager (leave empty to skip registration)"
+  type        = string
+  default     = ""
 }

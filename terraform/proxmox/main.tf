@@ -28,15 +28,21 @@ provider "proxmox" {
 
 ############################################################
 # Render cloud-init user-data with Terraform variables
+# Each VM gets its own rendered template (unique hostname).
 ############################################################
 locals {
-  rendered_user_data = templatefile("${path.module}/../../cloud-init/user-data", {
-    ssh_public_key     = var.ssh_public_key
-    tailscale_auth_key = var.tailscale_auth_key
-    vm_username        = var.vm_username
-    hostname_prefix    = var.hostname_prefix
-    timezone           = var.timezone
-  })
+  rendered_user_data = {
+    for i in range(var.vm_count) :
+    i => templatefile("${path.module}/../../cloud-init/user-data", {
+      ssh_public_key = var.ssh_public_key
+      vm_username    = var.vm_username
+      vm_hostname    = "${var.vm_name_prefix}-${i + 1}"
+      vm_swap_size        = var.vm_swap_size
+      timezone            = var.timezone
+      rhel_activation_key = var.rhel_activation_key
+      rhel_org_id         = var.rhel_org_id
+    })
+  }
 }
 
 ############################################################
@@ -65,7 +71,7 @@ resource "proxmox_virtual_environment_file" "user_data" {
   content_type = "snippets"
 
   source_raw {
-    data      = local.rendered_user_data
+    data      = local.rendered_user_data[count.index]
     file_name = "${var.vm_name_prefix}-${count.index + 1}-user-data.yaml"
   }
 }
