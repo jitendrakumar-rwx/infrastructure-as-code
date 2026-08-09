@@ -18,12 +18,7 @@ users:
     ssh_authorized_keys:
       - ${ssh_public_key}
 
-%{ if rhel_activation_key != "" && rhel_org_id != "" ~}
-rh_subscription:
-  activation-key: ${rhel_activation_key}
-  org: ${rhel_org_id}
-  auto-attach: true
-%{ endif ~}
+
 
 packages:
   - qemu-guest-agent
@@ -41,11 +36,15 @@ packages:
 timezone: ${timezone}
 
 runcmd:
+  - hostnamectl set-hostname "${vm_hostname}"
   - systemctl enable --now qemu-guest-agent
   - |
     if [ -f /etc/debian_version ]; then
       apt-get install -y iputils-ping netcat-openbsd
     elif [ -f /etc/redhat-release ]; then
+%{ if rhel_activation_key != "" && rhel_org_id != "" ~}
+      subscription-manager register --org="${rhel_org_id}" --activationkey="${rhel_activation_key}" --force
+%{ endif ~}
       dnf install -y iputils nmap-ncat bash-completion insights-client
       echo '[ -f /etc/profile.d/bash_completion.sh ] && . /etc/profile.d/bash_completion.sh' >> /etc/bashrc
       insights-client --register
