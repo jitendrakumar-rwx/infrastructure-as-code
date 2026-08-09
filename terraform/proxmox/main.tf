@@ -4,6 +4,10 @@ terraform {
       source  = "bpg/proxmox"
       version = "0.66.3"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -150,22 +154,31 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   vga {
     type = "serial0"
   }
+}
 
-  ############################################################
-  # SSH connection for destroy-time provisioner
-  ############################################################
-  connection {
-    type        = "ssh"
-    user        = var.vm_username
+############################################################
+# Auto-unregister RHEL subscription before VM is destroyed.
+# Uses null_resource + triggers because destroy provisioners
+# can only reference 'self' (not var.*).
+# Skipped silently on Ubuntu/CentOS or if SSH fails.
+############################################################
+resource "null_resource" "rhel_unregister" {
+  count = var.vm_count
+
+  triggers = {
+    vm_id       = proxmox_virtual_environment_vm.ubuntu_vm[count.index].id
+    vm_ip       = try([for ip in flatten(proxmox_virtual_environment_vm.ubuntu_vm[count.index].ipv4_addresses) : ip if !startswith(ip, "127.")][0], "127.0.0.1")
+    username    = var.vm_username
     private_key = file(pathexpand(var.proxmox_ssh_private_key_file))
-    host        = try([for ip in flatten(self.ipv4_addresses) : ip if !startswith(ip, "127.")][0], "127.0.0.1")
   }
 
-  ############################################################
-  # Auto-unregister RHEL subscription before VM is destroyed.
-  # Skipped silently on Ubuntu/CentOS (no /etc/redhat-release)
-  # or if subscription-manager is not installed.
-  ############################################################
+  connection {
+    type        = "ssh"
+    user        = self.triggers.username
+    private_key = self.triggers.private_key
+    host        = self.triggers.vm_ip
+  }
+
   provisioner "remote-exec" {
     when       = destroy
     on_failure = continue
