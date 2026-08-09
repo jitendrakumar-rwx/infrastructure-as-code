@@ -150,4 +150,27 @@ resource "proxmox_virtual_environment_vm" "ubuntu_vm" {
   vga {
     type = "serial0"
   }
+
+  ############################################################
+  # SSH connection for destroy-time provisioner
+  ############################################################
+  connection {
+    type        = "ssh"
+    user        = var.vm_username
+    private_key = file(pathexpand(var.proxmox_ssh_private_key_file))
+    host        = try([for ip in flatten(self.ipv4_addresses) : ip if !startswith(ip, "127.")][0], "127.0.0.1")
+  }
+
+  ############################################################
+  # Auto-unregister RHEL subscription before VM is destroyed.
+  # Skipped silently on Ubuntu/CentOS (no /etc/redhat-release)
+  # or if subscription-manager is not installed.
+  ############################################################
+  provisioner "remote-exec" {
+    when       = destroy
+    on_failure = continue
+    inline = [
+      "if command -v subscription-manager &>/dev/null && [ -f /etc/redhat-release ]; then sudo subscription-manager unregister || true; fi"
+    ]
+  }
 }
