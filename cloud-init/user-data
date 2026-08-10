@@ -53,7 +53,7 @@ runcmd:
       systemctl enable --now qemu-guest-agent
       echo '[ -f /etc/profile.d/bash_completion.sh ] && . /etc/profile.d/bash_completion.sh' >> /etc/bashrc
       if command -v insights-client >/dev/null 2>&1; then
-        sudo insights-client --register
+        systemd-run --wait insights-client --register
       fi
     fi
 %{ if vm_swap_size > 0 ~}
