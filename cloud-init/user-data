@@ -2,7 +2,9 @@
 
 hostname: ${vm_hostname}
 preserve_hostname: false
+%{ if rhel_activation_key == "" ~}
 package_update: true
+%{ endif ~}
 
 # Prevent Ubuntu background auto-updates from locking apt during provisioning
 bootcmd:
@@ -20,6 +22,7 @@ users:
 
 
 
+%{ if rhel_activation_key == "" ~}
 packages:
   - qemu-guest-agent
   - curl
@@ -32,20 +35,22 @@ packages:
   - traceroute
   - nmap
   - tmux
+%{ endif ~}
 
 timezone: ${timezone}
 
 runcmd:
   - hostnamectl set-hostname "${vm_hostname}"
-  - systemctl enable --now qemu-guest-agent
   - |
     if [ -f /etc/debian_version ]; then
+      systemctl enable --now qemu-guest-agent
       apt-get install -y iputils-ping netcat-openbsd
     elif [ -f /etc/redhat-release ]; then
 %{ if rhel_activation_key != "" && rhel_org_id != "" ~}
       subscription-manager register --org="${rhel_org_id}" --activationkey="${rhel_activation_key}" --force
 %{ endif ~}
-      dnf install -y iputils nmap-ncat bash-completion insights-client
+      dnf install -y qemu-guest-agent curl wget vim git unzip bash-completion tcpdump traceroute nmap tmux iputils nmap-ncat insights-client
+      systemctl enable --now qemu-guest-agent
       echo '[ -f /etc/profile.d/bash_completion.sh ] && . /etc/profile.d/bash_completion.sh' >> /etc/bashrc
       insights-client --register
     fi
