@@ -6,10 +6,10 @@ preserve_hostname: false
 package_update: true
 %{ endif ~}
 
-# Prevent Ubuntu background auto-updates from locking apt during provisioning
+# Prevent background auto-updates from locking package managers during provisioning
 bootcmd:
-  - [ systemctl, mask, unattended-upgrades.service, apt-daily-upgrade.timer, apt-daily.timer ]
-  - [ systemctl, stop, unattended-upgrades.service, apt-daily-upgrade.timer, apt-daily.timer ]
+  - [ systemctl, mask, unattended-upgrades.service, apt-daily-upgrade.timer, apt-daily.timer, dnf-makecache.timer ]
+  - [ systemctl, stop, unattended-upgrades.service, apt-daily-upgrade.timer, apt-daily.timer, dnf-makecache.timer ]
 
 users:
   - default
